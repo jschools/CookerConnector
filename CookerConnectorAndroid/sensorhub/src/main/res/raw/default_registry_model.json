@@ -1,0 +1,14 @@
+{
+  "name": "New SensorHub",
+  "model": "SensorHub T400",
+  "description": "Weatherproof Sensor Hub",
+  "capabilities": {
+    "channelCount": 4,
+    "conversionFunctions": {
+      "TEMPERATURE_PROBE_DOT_5600_OHM_F": {
+        "description": "Replication of the resistance/temperature function used by ThermoWorks DOT. Converts the voltage across a 5.6KΩ resistor in series with the thermistor.",
+        "name": "ThermoWorks DOT (F)"
+      }
+    }
+  }
+}

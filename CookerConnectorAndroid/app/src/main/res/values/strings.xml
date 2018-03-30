@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Cooker Connector</string>
+
+    <string name="pause">pause</string>
+    <string name="resume">Resume</string>
+    <string name="stop">Stop</string>
+    <string name="session_name">Session Name</string>
+    <string name="start">Start</string>
+
+    <string name="default_session_name_date">Untitled - %1$s</string>
+
+    <string name="alert_name_exceeds_f">%1$s exceeds %2$d°F</string><!-- 1:channel name; 2:temp -->
+    <string name="alert_name_fallsbelow_f">%1$s falls below %2$d°F</string><!-- 1:channel name; 2:temp -->
+    <string name="alerts_list_title">%1$s Alerts</string>
+    <string name="temperature">Temperature</string>
+    <string name="degreesF">°F</string>
+</resources>
