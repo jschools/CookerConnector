@@ -1,9 +1,10 @@
 package com.schoovello.cookerconnector.sensorhub.service;
 
 import android.annotation.SuppressLint;
-import android.arch.lifecycle.Observer;
-import android.support.annotation.Nullable;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
+import androidx.lifecycle.Observer;
 
 import com.schoovello.cookerconnector.datamodels.DataModel;
 import com.schoovello.cookerconnector.datamodels.DataStreamConfig;

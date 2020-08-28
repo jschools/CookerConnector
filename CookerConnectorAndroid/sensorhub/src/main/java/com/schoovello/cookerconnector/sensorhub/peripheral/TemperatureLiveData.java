@@ -1,9 +1,10 @@
 package com.schoovello.cookerconnector.sensorhub.peripheral;
 
-import android.arch.lifecycle.LiveData;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
+
+import androidx.lifecycle.LiveData;
 
 import com.schoovello.cookerconnector.datamodels.DataStreamConfig;
 import com.schoovello.cookerconnector.datamodels.TemperatureReading;

@@ -1,6 +1,6 @@
 package com.schoovello.cookerconnector.util;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 public class ObjectWrapper<T> {
 	@Nullable

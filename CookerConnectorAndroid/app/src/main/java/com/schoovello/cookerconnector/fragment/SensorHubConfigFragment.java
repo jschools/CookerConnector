@@ -1,10 +1,6 @@
 package com.schoovello.cookerconnector.fragment;
 
-import android.arch.lifecycle.Observer;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.SparseArray;
@@ -19,6 +15,11 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 
 import com.schoovello.cookerconnector.R;
 import com.schoovello.cookerconnector.data.FirebaseDbInstance;
@@ -65,7 +66,7 @@ public class SensorHubConfigFragment extends Fragment implements OnClickListener
 	}
 
 	@Override
-	public void onSaveInstanceState(Bundle outState) {
+	public void onSaveInstanceState(@NonNull Bundle outState) {
 		super.onSaveInstanceState(outState);
 
 		outState.putSparseParcelableArray(KEY_ENABLED_STREAM_SPECS, mEnabledStreamSpecs);

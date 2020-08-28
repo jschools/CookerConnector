@@ -1,7 +1,7 @@
 package com.schoovello.cookerconnector.data;
 
-import android.arch.lifecycle.LiveData;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.LiveData;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;

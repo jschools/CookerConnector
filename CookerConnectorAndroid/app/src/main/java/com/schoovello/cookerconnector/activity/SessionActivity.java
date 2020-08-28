@@ -1,24 +1,25 @@
 package com.schoovello.cookerconnector.activity;
 
-import android.arch.lifecycle.Observer;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.Observer;
 
 import com.google.firebase.database.DatabaseReference;
 import com.schoovello.cookerconnector.CookerConnectorApp;
 import com.schoovello.cookerconnector.R;
 import com.schoovello.cookerconnector.data.FirebaseDbInstance;
 import com.schoovello.cookerconnector.data.SessionInfoLiveData;
-import com.schoovello.cookerconnector.fragment.DataStreamFragment;
 import com.schoovello.cookerconnector.datamodels.SessionDataStream;
+import com.schoovello.cookerconnector.fragment.DataStreamFragment;
 import com.schoovello.cookerconnector.model.SessionInfo;
 import com.schoovello.cookerconnector.service.MonitorNotificationService;
 

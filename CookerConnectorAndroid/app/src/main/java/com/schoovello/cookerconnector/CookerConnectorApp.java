@@ -2,8 +2,6 @@ package com.schoovello.cookerconnector;
 
 import android.app.Application;
 
-import com.schoovello.cookerconnector.service.MonitorNotificationService;
-
 public class CookerConnectorApp extends Application {
 
 	private static CookerConnectorApp sInstance;
@@ -18,6 +16,6 @@ public class CookerConnectorApp extends Application {
 
 		sInstance = this;
 
-		MonitorNotificationService.updateNow();
+//		MonitorNotificationService.updateNow();
 	}
 }

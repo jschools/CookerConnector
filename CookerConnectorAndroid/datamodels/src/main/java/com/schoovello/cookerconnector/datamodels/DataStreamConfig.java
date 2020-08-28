@@ -2,7 +2,7 @@ package com.schoovello.cookerconnector.datamodels;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.google.firebase.database.Exclude;
 
@@ -80,6 +80,7 @@ public class DataStreamConfig implements Parcelable {
 	}
 
 	@Override
+	@NonNull
 	public String toString() {
 		return "DataStreamConfig{" +
 				"ch=" + channel +

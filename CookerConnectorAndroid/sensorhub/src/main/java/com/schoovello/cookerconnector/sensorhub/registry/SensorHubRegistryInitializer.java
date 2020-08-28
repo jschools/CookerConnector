@@ -1,8 +1,9 @@
 package com.schoovello.cookerconnector.sensorhub.registry;
 
-import android.arch.lifecycle.Observer;
-import android.support.annotation.Nullable;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
+import androidx.lifecycle.Observer;
 
 import com.google.gson.Gson;
 import com.schoovello.cookerconnector.datamodels.SensorHubRegistryModel;

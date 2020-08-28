@@ -1,6 +1,6 @@
 package com.schoovello.cookerconnector.sensorhub.conversion;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 public abstract class ConversionFunction {
 

@@ -3,9 +3,10 @@ package com.schoovello.cookerconnector.data;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.support.annotation.MainThread;
-import android.support.annotation.NonNull;
-import android.support.annotation.WorkerThread;
+
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
+import androidx.annotation.WorkerThread;
 
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;

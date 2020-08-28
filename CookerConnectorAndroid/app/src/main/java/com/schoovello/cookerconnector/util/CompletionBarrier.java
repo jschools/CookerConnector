@@ -1,6 +1,6 @@
 package com.schoovello.cookerconnector.util;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;

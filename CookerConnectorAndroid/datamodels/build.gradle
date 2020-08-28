@@ -1,18 +1,15 @@
-apply plugin: 'com.android.feature'
+apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 26
-
-
-    baseFeature true
+    compileSdkVersion 29
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 26
+        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
 
     }
 
@@ -26,16 +23,11 @@ android {
 }
 
 dependencies {
-    api 'com.android.support:appcompat-v7:26.1.0'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    api 'android.arch.lifecycle:extensions:1.1.0'
-    implementation('com.google.firebase:firebase-database:11.6.2') {
-        exclude group: 'com.android.support'
-    }
+    implementation('com.google.firebase:firebase-database:19.4.0')
 
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-    application project(':app')
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
 }

@@ -1,10 +1,11 @@
 package com.schoovello.cookerconnector.sensorhub.repository;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.util.Pair;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
