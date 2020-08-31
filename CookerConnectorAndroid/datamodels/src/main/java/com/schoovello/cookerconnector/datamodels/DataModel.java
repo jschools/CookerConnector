@@ -1,5 +1,7 @@
 package com.schoovello.cookerconnector.datamodels;
 
+import androidx.annotation.NonNull;
+
 public class DataModel {
 
 	public final double rawValue;
@@ -16,6 +18,7 @@ public class DataModel {
 		this.timeMillis = timeMillis;
 	}
 
+	@NonNull
 	@Override
 	public String toString() {
 		return "DataModel{" +

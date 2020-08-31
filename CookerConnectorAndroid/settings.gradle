@@ -1,1 +1,3 @@
-include ':app', ':sensorhub', ':datamodels'
+include ':app'
+//include ':sensorhub'
+include ':datamodels'

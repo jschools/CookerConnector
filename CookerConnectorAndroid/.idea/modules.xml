@@ -2,14 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/CookerConnector-CookerConnectorAndroid.iml" filepath="$PROJECT_DIR$/.idea/modules/CookerConnector-CookerConnectorAndroid.iml" group="CookerConnectorAndroid" />
-      <module fileurl="file://$PROJECT_DIR$/CookerConnectorAndroid.iml" filepath="$PROJECT_DIR$/CookerConnectorAndroid.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/CookerConnectorAndroid-app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/CookerConnectorAndroid-app.iml" group="CookerConnectorAndroid/app" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/datamodels/CookerConnectorAndroid-datamodels.iml" filepath="$PROJECT_DIR$/.idea/modules/datamodels/CookerConnectorAndroid-datamodels.iml" group="CookerConnectorAndroid/datamodels" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/sensorhub/CookerConnectorAndroid-sensorhub.iml" filepath="$PROJECT_DIR$/.idea/modules/sensorhub/CookerConnectorAndroid-sensorhub.iml" group="CookerConnectorAndroid/sensorhub" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/datamodels/datamodels.iml" filepath="$PROJECT_DIR$/datamodels/datamodels.iml" />
-      <module fileurl="file://$PROJECT_DIR$/sensorhub/sensorhub.iml" filepath="$PROJECT_DIR$/sensorhub/sensorhub.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/CookerConnectorAndroid.iml" filepath="$PROJECT_DIR$/.idea/CookerConnectorAndroid.iml" group="CookerConnectorAndroid" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/app.iml" group="CookerConnectorAndroid/app" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/datamodels/datamodels.iml" filepath="$PROJECT_DIR$/.idea/modules/datamodels/datamodels.iml" group="CookerConnectorAndroid/datamodels" />
     </modules>
   </component>
 </project>

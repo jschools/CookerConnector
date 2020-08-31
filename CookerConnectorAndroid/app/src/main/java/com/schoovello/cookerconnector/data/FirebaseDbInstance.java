@@ -9,8 +9,7 @@ public final class FirebaseDbInstance {
 	public static synchronized FirebaseDatabase get() {
 		if (sInstance == null) {
 			sInstance = FirebaseDatabase.getInstance();
-			sInstance.setPersistenceCacheSizeBytes(90 * 1024 * 1024);
-			sInstance.setPersistenceEnabled(true);
+			sInstance.setPersistenceEnabled(false);
 		}
 		return sInstance;
 	}
