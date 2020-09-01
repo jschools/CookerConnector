@@ -98,7 +98,7 @@ public class SessionActivity extends AppCompatActivity implements OnClickListene
 		}
 
 		final boolean newPaused = !sessionInfo.isPaused();
-		final DatabaseReference pausedRef = FirebaseDbInstance.get()
+		final DatabaseReference pausedRef = FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sessions")
 				.child(mSessionId)
 				.child("paused");
@@ -111,7 +111,7 @@ public class SessionActivity extends AppCompatActivity implements OnClickListene
 			return;
 		}
 
-		final DatabaseReference stoppedRef = FirebaseDbInstance.get()
+		final DatabaseReference stoppedRef = FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sessions")
 				.child(mSessionId)
 				.child("stopped");
@@ -186,7 +186,7 @@ public class SessionActivity extends AppCompatActivity implements OnClickListene
 		final Map<String, SessionDataStream> dataStreams = sessionInfo.getDataStreams();
 		for (Map.Entry<String, SessionDataStream> entry : dataStreams.entrySet()) {
 			final SessionDataStream dataStream = entry.getValue();
-			DatabaseReference streamPausedRef = FirebaseDbInstance.get()
+			DatabaseReference streamPausedRef = FirebaseDbInstance.INSTANCE.getInstance()
 					.getReference("sensorHubs")
 					.child(dataStream.getActiveDataStream())
 					.child("paused");

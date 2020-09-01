@@ -123,7 +123,7 @@ public class ControlActivity extends AppCompatActivity implements OnClickListene
 	}
 
 	private DatabaseReference getReference() {
-		return FirebaseDbInstance.get()
+		return FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sensorHubs").child("-KzvLiaqYMCHTQ0nXR4L")
 				.child("control")
 				.child("channels").child("0")

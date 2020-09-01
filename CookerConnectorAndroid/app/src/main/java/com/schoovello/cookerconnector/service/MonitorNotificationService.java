@@ -79,7 +79,7 @@ public class MonitorNotificationService extends Service {
 		mHandler = new Handler(mThread.getLooper());
 		mForeground = false;
 
-		mDb = FirebaseDbInstance.get();
+		mDb = FirebaseDbInstance.INSTANCE.getInstance();
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 			NotificationChannel channel = new NotificationChannel(CHANNEL_SESSION_STATUS, "Active Sessions", NotificationManager.IMPORTANCE_LOW);

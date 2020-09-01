@@ -188,7 +188,7 @@ public class EditAlertDialogFragment extends AppCompatDialogFragment implements 
 	public void onClick(DialogInterface dialog, int which) {
 		try {
 			if (which == DialogInterface.BUTTON_POSITIVE) {
-				FirebaseDbInstance.get()
+				FirebaseDbInstance.INSTANCE.getInstance()
 						.getReference("sessions").child(mSessionId)
 						.child("dataStreams").child(mDataStreamId)
 						.child("alarms").child(mAlarmId)

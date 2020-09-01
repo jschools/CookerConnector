@@ -25,7 +25,7 @@ public class AlarmSpecLiveData extends LiveData<AlarmSpec> implements ValueEvent
 
 	@Override
 	protected void onActive() {
-		mReference = FirebaseDbInstance.get()
+		mReference = FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sessions").child(mSessionId)
 				.child("dataStreams").child(mDataStreamId)
 				.child("alarms").child(mAlarmId);

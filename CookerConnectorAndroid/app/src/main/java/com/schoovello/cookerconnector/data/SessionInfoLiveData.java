@@ -20,7 +20,7 @@ public class SessionInfoLiveData extends LiveData<SessionInfo> implements ValueE
 
 	@Override
 	protected void onActive() {
-		mReference = FirebaseDbInstance.get()
+		mReference = FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sessions")
 				.child(mSessionId);
 		mReference.addValueEventListener(this);

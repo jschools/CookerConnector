@@ -4,9 +4,13 @@ import androidx.annotation.NonNull;
 
 public class DataModel {
 
-	public final double rawValue;
-	public final double calibratedValue;
-	public final long timeMillis;
+	public double rawValue;
+	public double calibratedValue;
+	public long timeMillis;
+
+	public DataModel() {
+
+	}
 
 	public DataModel(TemperatureReading reading) {
 		this(reading.rawAdcValue, reading.f, reading.timestamp);
@@ -15,6 +19,30 @@ public class DataModel {
 	public DataModel(double rawValue, double calibratedValue, long timeMillis) {
 		this.rawValue = rawValue;
 		this.calibratedValue = calibratedValue;
+		this.timeMillis = timeMillis;
+	}
+
+	public double getRawValue() {
+		return rawValue;
+	}
+
+	public void setRawValue(double rawValue) {
+		this.rawValue = rawValue;
+	}
+
+	public double getCalibratedValue() {
+		return calibratedValue;
+	}
+
+	public void setCalibratedValue(double calibratedValue) {
+		this.calibratedValue = calibratedValue;
+	}
+
+	public long getTimeMillis() {
+		return timeMillis;
+	}
+
+	public void setTimeMillis(long timeMillis) {
 		this.timeMillis = timeMillis;
 	}
 

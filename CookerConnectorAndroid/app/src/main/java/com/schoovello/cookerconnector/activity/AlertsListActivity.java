@@ -62,7 +62,7 @@ public class AlertsListActivity  extends AppCompatActivity implements OnAlertAct
 
 	@Override
 	public void onDeleteAlertSelected(@NonNull String alertId) {
-		FirebaseDbInstance.get()
+		FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sessions").child(mSessionId)
 				.child("dataStreams").child(mDataStreamId)
 				.child("alarms").child(alertId)
@@ -79,7 +79,7 @@ public class AlertsListActivity  extends AppCompatActivity implements OnAlertAct
 	}
 
 	private void onAddClicked() {
-		String alertId = FirebaseDbInstance.get().getReference().push().getKey();
+		String alertId = FirebaseDbInstance.INSTANCE.getInstance().getReference().push().getKey();
 		EditAlertDialogFragment frag = EditAlertDialogFragment.newInstance(mSessionId, mDataStreamId, mDataStreamTitle, alertId);
 		frag.show(getSupportFragmentManager(), FRAG_TAG_EDIT_ALERT);
 	}

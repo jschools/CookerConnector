@@ -117,7 +117,7 @@ public class DataStreamFragment extends Fragment implements OnClickListener {
 
 		mBackgroundDataProcessor.start();
 
-		mDataRef = FirebaseDbInstance.get()
+		mDataRef = FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sessionData")
 				.child(mSessionId)
 				.child(mDataStreamId);

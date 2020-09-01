@@ -31,7 +31,7 @@ public class SessionsListAdapter extends FirebaseRecyclerAdapter<SessionInfo, Se
 	private Date mTempDate = new Date();
 
 	private static FirebaseRecyclerOptions<SessionInfo> buildOptions(LifecycleOwner lifecycleOwner) {
-		Query query = FirebaseDbInstance.get()
+		Query query = FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sessions");
 
 		return new FirebaseRecyclerOptions.Builder<SessionInfo>()

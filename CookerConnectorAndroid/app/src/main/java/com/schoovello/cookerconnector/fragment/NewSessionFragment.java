@@ -144,7 +144,7 @@ public class NewSessionFragment extends Fragment implements OnClickListener {
 		mViews.sessionName.setText(mSessionName);
 		mViews.sessionName.addTextChangedListener(mSessionNameListener);
 
-		mSensorHubsRef = FirebaseDbInstance.get().getReference("sensorHubs");
+		mSensorHubsRef = FirebaseDbInstance.INSTANCE.getInstance().getReference("sensorHubs");
 		mSensorHubsRef.addChildEventListener(mSensorHubsListener);
 
 		updateViews();
@@ -254,7 +254,7 @@ public class NewSessionFragment extends Fragment implements OnClickListener {
 	}
 
 	private void saveConfigAndCreateSession() {
-		final FirebaseDatabase db = FirebaseDbInstance.get();
+		final FirebaseDatabase db = FirebaseDbInstance.INSTANCE.getInstance();
 		final DatabaseReference sessionRef = db.getReference("sessions").push();
 		final String sessionId = sessionRef.getKey();
 

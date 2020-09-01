@@ -88,7 +88,7 @@ public class SensorHubConfigFragment extends Fragment implements OnClickListener
 			mExpanded = false;
 		}
 
-		mRegistryLiveData = new SensorHubRegistryLiveData(FirebaseDbInstance.get(), mSensorHubId);
+		mRegistryLiveData = new SensorHubRegistryLiveData(FirebaseDbInstance.INSTANCE.getInstance(), mSensorHubId);
 		mRegistryLiveData.observe(this, mSensorHubRegistryObserver);
 	}
 

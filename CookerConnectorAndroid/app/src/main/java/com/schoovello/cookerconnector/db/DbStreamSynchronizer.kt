@@ -1,17 +1,11 @@
-package com.schoovello.cookerconnector.data
+package com.schoovello.cookerconnector.db
 
+import android.util.Log
+import androidx.room.withTransaction
 import com.google.firebase.database.*
-import com.schoovello.cookerconnector.datamodels.DataModel
-import com.schoovello.cookerconnector.db.DataPoint
-import com.schoovello.cookerconnector.db.DataPointDao
-import com.schoovello.cookerconnector.db.Stream
-import com.schoovello.cookerconnector.db.StreamDatabase
 import com.schoovello.cookerconnector.util.fetchValueSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class DbStreamSynchronizer(
     private val coroutineScope: CoroutineScope,
@@ -29,25 +23,34 @@ class DbStreamSynchronizer(
 
     private suspend fun synchronizeAndMonitor() {
         try {
-            synchronize()
+            val streamRef = firebaseDb.reference
+                .child("sessionData")
+                .child(fbSessionId)
+                .child(fbStreamId)
+
+            // synchronize data in bulk
+            synchronize(streamRef)
+
+            // begin monitoring for changes
             monitor()
         } catch (t: Throwable) {
             t.printStackTrace()
         }
     }
 
-    private suspend fun synchronize() {
-        val streamRef = firebaseDb.reference
-            .child("sessionData")
-            .child(fbSessionId)
-            .child(fbStreamId)
+    private suspend fun synchronize(streamRef: DatabaseReference) {
+        Log.d("ME", "Synchronize: $streamRef")
 
         // get the max timestamp in the Firebase db
         val maxFbTimestamp = fetchMaxTimestampFromFirebase(streamRef)
 
+        Log.d("ME", "maxFbTimestamp: $maxFbTimestamp")
+
         // get the max timestamp in the Room db
         val roomStreamRow = findOrInsertStream()
         val maxRoomTimestamp = roomDb.dataPointDao().getLastTimestampForStream(roomStreamRow.rowId) ?: 0L
+
+        Log.d("ME", "maxRoomTs: $maxRoomTimestamp")
 
         // pull down data between the timestamps
         if (maxFbTimestamp != null) {
@@ -61,6 +64,8 @@ class DbStreamSynchronizer(
         startTimestampExclusive: Long,
         endTimestampIncl: Long
     ) {
+        Log.d("ME", "Synchronize start: $startTimestampExclusive end: $endTimestampIncl")
+
         var batchStartTsExclusive: Long? = startTimestampExclusive
         while (batchStartTsExclusive != null && batchStartTsExclusive < endTimestampIncl) {
             // synchronize a batch
@@ -80,6 +85,8 @@ class DbStreamSynchronizer(
         startTimestampExclusive: Long,
         endTimestampIncl: Long
     ): Long? {
+        Log.d("ME", "Synchronize batch start: $startTimestampExclusive end: $endTimestampIncl")
+
         // create query for all data points starting after startTimestampExclusive, limiting to BATCH_SIZE
         val query = streamRef.orderByChild("timeMillis")
             .startAt((startTimestampExclusive + 1).toDouble())
@@ -98,6 +105,8 @@ class DbStreamSynchronizer(
             )
         }.toList()
 
+        Log.d("ME", "Batch size: ${dataPoints.size}")
+
         if (dataPoints.isEmpty()) {
             return null
         }
@@ -112,19 +121,23 @@ class DbStreamSynchronizer(
     private suspend fun findOrInsertStream(): Stream {
         val streamDao = roomDb.streamDao()
 
-        // find existing row
-        val existingRow = streamDao.find(fbSessionId, fbStreamId)
-        existingRow?.also { return it }
+        return roomDb.withTransaction {
+            // find existing row
+            val existingRow = streamDao.find(fbSessionId, fbStreamId)
+            if (existingRow == null) {
+                // create and insert it
+                val newRow = Stream(
+                    fbSessionId = fbSessionId,
+                    fbStreamId = fbStreamId
+                )
+                val id = streamDao.insert(newRow)
 
-        // create and insert it
-        val newRow = Stream(
-            fbSessionId = fbSessionId,
-            fbStreamId = fbStreamId
-        )
-        val id = streamDao.insert(newRow)
-
-        // the insert produced an auto-id, so the returned result must have that ID
-        return newRow.copy(rowId = id)
+                // the insert produced an auto-id, so the returned result must have that ID
+                newRow.copy(rowId = id)
+            } else {
+                existingRow
+            }
+        }
     }
 
     /**
@@ -135,7 +148,11 @@ class DbStreamSynchronizer(
      */
     private suspend fun fetchMaxTimestampFromFirebase(streamRef: DatabaseReference): Long? {
         val query = streamRef.orderByChild("timeMillis").limitToLast(1)
-        return (query.fetchValueSnapshot().value as? Number)?.toLong()
+        val value = query.fetchValueSnapshot().children.firstOrNull()?.child("timeMillis")?.value
+
+        Log.d("ME", "Fetched $value (${value?.javaClass})")
+
+        return (value as? Number)?.toLong()
     }
 
     private suspend fun monitor() {
@@ -143,6 +160,6 @@ class DbStreamSynchronizer(
     }
 
     companion object {
-        private const val BATCH_SIZE = 256
+        private const val BATCH_SIZE = 1024
     }
 }

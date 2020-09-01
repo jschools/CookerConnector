@@ -32,7 +32,7 @@ public class AlertsListAdapter extends FirebaseRecyclerAdapter<AlarmSpec, Alerts
 	private OnAlertActionListener mListener;
 
 	private static FirebaseRecyclerOptions<AlarmSpec> buildOptions(LifecycleOwner lifecycleOwner, String sessionId, String dataStreamId) {
-		Query query = FirebaseDbInstance.get()
+		Query query = FirebaseDbInstance.INSTANCE.getInstance()
 				.getReference("sessions").child(sessionId)
 				.child("dataStreams").child(dataStreamId)
 				.child("alarms");
