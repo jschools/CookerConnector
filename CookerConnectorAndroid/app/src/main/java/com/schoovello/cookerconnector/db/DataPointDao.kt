@@ -26,4 +26,7 @@ interface DataPointDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(dataPoints: List<DataPoint>)
+
+    @Query("DELETE FROM data_point WHERE stream_id = :streamId")
+    suspend fun deleteAll(streamId: Long): Int
 }

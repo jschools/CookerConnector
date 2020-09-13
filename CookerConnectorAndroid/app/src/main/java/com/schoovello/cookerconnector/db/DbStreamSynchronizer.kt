@@ -2,7 +2,9 @@ package com.schoovello.cookerconnector.db
 
 import android.util.Log
 import androidx.room.withTransaction
-import com.google.firebase.database.*
+import com.google.firebase.database.DatabaseException
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.schoovello.cookerconnector.util.fetchValueSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -69,7 +71,7 @@ class DbStreamSynchronizer(
         var batchStartTsExclusive: Long? = startTimestampExclusive
         while (batchStartTsExclusive != null && batchStartTsExclusive < endTimestampIncl) {
             // synchronize a batch
-            val lastTimestampInBatch = synchronizeBatch(streamId, streamRef, batchStartTsExclusive, endTimestampIncl)
+            val lastTimestampInBatch = synchronizeBatch(streamId, streamRef, batchStartTsExclusive, endTimestampIncl, BATCH_SIZE)
 
             // next batch starts at the end of the previous batch
             batchStartTsExclusive = lastTimestampInBatch
@@ -83,7 +85,8 @@ class DbStreamSynchronizer(
         streamId: Long,
         streamRef: DatabaseReference,
         startTimestampExclusive: Long,
-        endTimestampIncl: Long
+        endTimestampIncl: Long,
+        maxBatchSize: Int
     ): Long? {
         Log.d("ME", "Synchronize batch start: $startTimestampExclusive end: $endTimestampIncl")
 
@@ -91,7 +94,7 @@ class DbStreamSynchronizer(
         val query = streamRef.orderByChild("timeMillis")
             .startAt((startTimestampExclusive + 1).toDouble())
             .endAt(endTimestampIncl.toDouble())
-            .limitToFirst(BATCH_SIZE)
+            .limitToFirst(maxBatchSize)
 
         // fetch from Firebase
         val snapshot = query.fetchValueSnapshot()
@@ -112,7 +115,9 @@ class DbStreamSynchronizer(
         }
 
         // insert into Room
-        roomDb.dataPointDao().insertAll(dataPoints)
+        roomDb.withTransaction {
+            roomDb.dataPointDao().insertAll(dataPoints)
+        }
 
         // return last timestamp
         return dataPoints.last().timestamp

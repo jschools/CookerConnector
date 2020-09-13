@@ -2,7 +2,6 @@ package com.schoovello.cookerconnector.activity
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,10 +11,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.map
 import androidx.lifecycle.switchMap
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.DiffUtil.DiffResult
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.schoovello.cookerconnector.R
@@ -27,18 +28,27 @@ import com.schoovello.cookerconnector.db.StreamRepository
 import kotlinx.android.synthetic.main.activity_test_sync.decrease_size_button
 import kotlinx.android.synthetic.main.activity_test_sync.increase_size_button
 import kotlinx.android.synthetic.main.activity_test_sync.recycler_view
+import kotlinx.android.synthetic.main.activity_test_sync.reset_button
 import kotlinx.android.synthetic.main.activity_test_sync.start_button
 import kotlinx.android.synthetic.main.activity_test_sync.window_size
 import kotlinx.android.synthetic.main.list_item_data_point.view.text
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
-import kotlin.system.measureTimeMillis
+import java.util.concurrent.atomic.AtomicInteger
 
 class TestSyncActivity : AppCompatActivity() {
 
@@ -79,6 +89,12 @@ class TestSyncActivity : AppCompatActivity() {
             ).start()
         }
 
+        reset_button.setOnClickListener {
+            lifecycle.coroutineScope.launch {
+                StreamRepository.deleteStreamData(SESSION_ID, STREAM_ID)
+            }
+        }
+
         decrease_size_button.setOnClickListener {
             viewModel.changeWindowStep(-1)
         }
@@ -95,10 +111,7 @@ class TestSyncActivity : AppCompatActivity() {
         }
 
         viewModel.dataPointsLd.observe(this) {
-            val setDataTime = measureTimeMillis {
-                adapter.setData(it)
-            }
-            Log.d("ME", "setData time: ${setDataTime}ms")
+            adapter.setData(it)
         }
     }
 
@@ -115,42 +128,102 @@ class TestSyncActivity : AppCompatActivity() {
 
         private var strings: List<String> = emptyList()
 
-        fun setData(newData: List<AveragedDataPoint>) {
+        private val processingChannel = Channel<ProcessInput>(Channel.CONFLATED)
+
+        private var nextInputId = AtomicInteger(0)
+
+        init {
             coroutineScope.launch {
-                val oldData = data
-
-                val diffResult = async(Dispatchers.Default) {
-                    DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-                        override fun getOldListSize() = oldData.size
-
-                        override fun getNewListSize() = newData.size
-
-                        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                            return oldData[oldItemPosition].timeMillis == newData[newItemPosition].timeMillis
-                        }
-
-                        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) = true
-                    })
-                }
-
-                val convertResult = async(Dispatchers.Default) {
-                    newData.map {
-                        val zonedTime = Instant.ofEpochMilli(it.timeMillis).atZone(ZoneId.systemDefault())
-                        "${formatter.format(zonedTime)} : ${it.averageValue}"
+                @Suppress("EXPERIMENTAL_API_USAGE")
+                processingChannel.consumeAsFlow()
+                    .mapLatest {
+                        process(it)
+                    }.collect {
+                        onProcessingResult(it)
                     }
+            }
+        }
+
+        private class ProcessInput(
+            val oldData: List<AveragedDataPoint>,
+            val newData: List<AveragedDataPoint>,
+            val id: Int
+        )
+
+        private class ProcessOutput(
+            val newData: List<AveragedDataPoint>,
+            val strings: List<String>,
+            val diff: DiffResult,
+            val id: Int
+        )
+
+        /**
+         * Transforms an input into an output on a background thread
+         */
+        private suspend fun process(input: ProcessInput): ProcessOutput {
+            // launch within the current CoroutineScope
+            return withContext(currentCoroutineContext()) {
+                with(input) {
+                    // perform diff on background thread
+                    val diffResult = async(Dispatchers.Default) {
+                        DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+                            override fun getOldListSize() = oldData.size
+
+                            override fun getNewListSize() = newData.size
+
+                            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                                // cooperate with cancellation
+                                ensureActive()
+
+                                return oldData[oldItemPosition].timeMillis == newData[newItemPosition].timeMillis
+                            }
+
+                            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) = true
+                        }, false)
+                    }
+
+                    val stringsResult = async(Dispatchers.Default) {
+                        newData.map {
+                            // cooperate with cancellation
+                            yield()
+
+                            val zonedTime = Instant.ofEpochMilli(it.timeMillis).atZone(ZoneId.systemDefault())
+                            "${formatter.format(zonedTime)} : ${it.averageValue}"
+                        }
+                    }
+
+                    ProcessOutput(
+                        newData = newData,
+                        strings = stringsResult.await(),
+                        diff = diffResult.await(),
+                        id = input.id
+                    )
                 }
+            }
+        }
 
-                val diff = diffResult.await()
-                val newStrings = convertResult.await()
+        fun onProcessingResult(result: ProcessOutput) {
+            data = result.newData
+            strings = result.strings
 
-                data = newData
-                strings = newStrings
+            try {
+                result.diff.dispatchUpdatesTo(this)
+            } catch (t: Throwable) {
+                t.printStackTrace()
 
-                val dispatchTime = measureTimeMillis {
-                    diff.dispatchUpdatesTo(this@Adapter)
-                }
+                notifyDataSetChanged()
+            }
+        }
 
-                Log.d("ME", "dispatch time: ${dispatchTime}ms")
+        fun setData(newData: List<AveragedDataPoint>) {
+            val id = nextInputId.getAndIncrement()
+
+            coroutineScope.launch {
+                processingChannel.send(ProcessInput(
+                    oldData = data,
+                    newData = newData,
+                    id = id
+                ))
             }
         }
 

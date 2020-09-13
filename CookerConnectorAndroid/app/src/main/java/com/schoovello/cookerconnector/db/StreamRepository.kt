@@ -1,5 +1,6 @@
 package com.schoovello.cookerconnector.db
 
+import android.util.Log
 import androidx.room.Room
 import com.schoovello.cookerconnector.CookerConnectorApp
 import kotlinx.coroutines.flow.Flow
@@ -40,5 +41,13 @@ object StreamRepository {
             val dataDao = database.dataPointDao()
             emitAll(dataDao.getAverages(streamId, startTs, endTs, windowSizeMs))
         }
+    }
+
+    suspend fun deleteStreamData(fbSessionId: String, fbStreamId: String) {
+        val deleteCount = getStreamId(fbSessionId, fbStreamId)?.let {
+            database.dataPointDao().deleteAll(it)
+        } ?: 0
+
+        Log.d("ME", "Deleted $deleteCount rows from $fbSessionId/$fbStreamId")
     }
 }
