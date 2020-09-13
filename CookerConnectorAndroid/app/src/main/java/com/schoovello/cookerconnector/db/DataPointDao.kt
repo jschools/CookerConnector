@@ -19,7 +19,7 @@ interface DataPointDao {
     fun getAllInRange(streamId: Long, startTs: Long, endTs: Long): Flow<List<DataPoint>>
 
     @Query("SELECT (chunk_time * :windowSizeMs + (:windowSizeMs / 2)) as ts, avg_value FROM ( SELECT (ts / :windowSizeMs) as chunk_time, avg(calibrated_val) as avg_value FROM data_point WHERE stream_id = :streamId AND ts BETWEEN :startTs AND :endTs GROUP BY chunk_time)")
-    fun getAverages(streamId: Long, startTs: Long, endTs: Long, windowSizeMs: Long): Flow<List<AveragedDataPoint>>
+    fun getAverages(streamId: Long, startTs: Long, endTs: Long, windowSizeMs: Long): Flow<List<SummarizedDataPoint>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(dataPoint: DataPoint)

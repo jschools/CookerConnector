@@ -22,9 +22,9 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.schoovello.cookerconnector.R
 import com.schoovello.cookerconnector.activity.TestSyncActivity.Adapter.Holder
 import com.schoovello.cookerconnector.data.FirebaseDbInstance
-import com.schoovello.cookerconnector.db.AveragedDataPoint
 import com.schoovello.cookerconnector.db.DbStreamSynchronizer
 import com.schoovello.cookerconnector.db.StreamRepository
+import com.schoovello.cookerconnector.db.SummarizedDataPoint
 import kotlinx.android.synthetic.main.activity_test_sync.decrease_size_button
 import kotlinx.android.synthetic.main.activity_test_sync.increase_size_button
 import kotlinx.android.synthetic.main.activity_test_sync.recycler_view
@@ -64,7 +64,7 @@ class TestSyncActivity : AppCompatActivity() {
             step.coerceIn(WINDOW_STEPS.indices).let { WINDOW_STEPS[it] }
         }
 
-        val dataPointsLd: LiveData<List<AveragedDataPoint>> = windowStepLd.switchMap { (windowMs, _) ->
+        val dataPointsLd: LiveData<List<SummarizedDataPoint>> = windowStepLd.switchMap { (windowMs, _) ->
             StreamRepository.getAverages(SESSION_ID, STREAM_ID, 0, Long.MAX_VALUE, windowMs).asLiveData()
         }
 
@@ -124,7 +124,7 @@ class TestSyncActivity : AppCompatActivity() {
 
         private val formatter = DateTimeFormatter.ISO_LOCAL_TIME
 
-        private var data: List<AveragedDataPoint> = emptyList()
+        private var data: List<SummarizedDataPoint> = emptyList()
 
         private var strings: List<String> = emptyList()
 
@@ -145,13 +145,13 @@ class TestSyncActivity : AppCompatActivity() {
         }
 
         private class ProcessInput(
-            val oldData: List<AveragedDataPoint>,
-            val newData: List<AveragedDataPoint>,
+            val oldData: List<SummarizedDataPoint>,
+            val newData: List<SummarizedDataPoint>,
             val id: Int
         )
 
         private class ProcessOutput(
-            val newData: List<AveragedDataPoint>,
+            val newData: List<SummarizedDataPoint>,
             val strings: List<String>,
             val diff: DiffResult,
             val id: Int
@@ -215,7 +215,7 @@ class TestSyncActivity : AppCompatActivity() {
             }
         }
 
-        fun setData(newData: List<AveragedDataPoint>) {
+        fun setData(newData: List<SummarizedDataPoint>) {
             val id = nextInputId.getAndIncrement()
 
             coroutineScope.launch {
@@ -244,8 +244,8 @@ class TestSyncActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val SESSION_ID = "-L8NtmMM2ndRyNlkyWC2"
-        private const val STREAM_ID = "-L8NtmMNjf7WwlIHQWjg"
+        private const val SESSION_ID = "-testMonitor1" // "-L8NtmMM2ndRyNlkyWC2"
+        private const val STREAM_ID = "stream1" // "-L8NtmMNjf7WwlIHQWjg"
 
         private const val DEFAULT_WINDOW_STEP_INDEX = 6
 

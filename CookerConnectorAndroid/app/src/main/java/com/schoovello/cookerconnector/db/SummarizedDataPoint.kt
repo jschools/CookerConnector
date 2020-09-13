@@ -2,7 +2,7 @@ package com.schoovello.cookerconnector.db
 
 import androidx.room.ColumnInfo
 
-class AveragedDataPoint(
+class SummarizedDataPoint(
     @ColumnInfo(name = "ts")
     val timeMillis: Long,
 

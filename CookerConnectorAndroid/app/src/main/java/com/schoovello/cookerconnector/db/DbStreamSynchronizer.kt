@@ -2,12 +2,19 @@ package com.schoovello.cookerconnector.db
 
 import android.util.Log
 import androidx.room.withTransaction
+import com.google.firebase.database.ChildEventListener
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseException
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.schoovello.cookerconnector.util.fetchValueSnapshot
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.coroutineContext
+import kotlin.coroutines.resumeWithException
 
 class DbStreamSynchronizer(
     private val coroutineScope: CoroutineScope,
@@ -34,7 +41,7 @@ class DbStreamSynchronizer(
             synchronize(streamRef)
 
             // begin monitoring for changes
-            monitor()
+            monitorForever(streamRef)
         } catch (t: Throwable) {
             t.printStackTrace()
         }
@@ -69,7 +76,7 @@ class DbStreamSynchronizer(
         Log.d("ME", "Synchronize start: $startTimestampExclusive end: $endTimestampIncl")
 
         var batchStartTsExclusive: Long? = startTimestampExclusive
-        while (batchStartTsExclusive != null && batchStartTsExclusive < endTimestampIncl) {
+        while (coroutineContext.isActive && batchStartTsExclusive != null && batchStartTsExclusive < endTimestampIncl) {
             // synchronize a batch
             val lastTimestampInBatch = synchronizeBatch(streamId, streamRef, batchStartTsExclusive, endTimestampIncl, BATCH_SIZE)
 
@@ -100,12 +107,8 @@ class DbStreamSynchronizer(
         val snapshot = query.fetchValueSnapshot()
 
         // create Room objects for the results
-        val dataPoints = snapshot.children.map { childSnapshot ->
-            DataPoint(
-                timestamp = (childSnapshot.child("timeMillis").value as Number).toLong(),
-                calibratedValue = (childSnapshot.child("calibratedValue").value as Number).toFloat(),
-                streamId = streamId
-            )
+        val dataPoints = snapshot.children.map {
+            convertDataSnapshot(it, streamId)
         }.toList()
 
         Log.d("ME", "Batch size: ${dataPoints.size}")
@@ -160,8 +163,81 @@ class DbStreamSynchronizer(
         return (value as? Number)?.toLong()
     }
 
-    private suspend fun monitor() {
+    /**
+     * Attaches an observer to the Firebase DB and inserts all changes
+     */
+    private suspend fun monitorForever(
+        streamRef: DatabaseReference
+    ) {
+        Log.d("ME", "monitoring")
 
+        // get the max timestamp in the Room db
+        val roomStreamRow = findOrInsertStream()
+        val streamId = roomStreamRow.rowId
+        val maxRoomTimestamp = roomDb.dataPointDao().getLastTimestampForStream(streamId) ?: 0L
+
+        Log.d("ME", "maxRoomTs: $maxRoomTimestamp")
+
+        // create query for all data points starting after startTimestampExclusive
+        val query = streamRef.orderByChild("timeMillis")
+            .startAt((maxRoomTimestamp + 1).toDouble())
+
+        suspendCancellableCoroutine<Unit> { cont ->
+            val childListener = object : ChildEventListener {
+                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                    if (cont.isActive) {
+                        onNewDataPoint(snapshot, streamId)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    if (cont.isActive) {
+                        cont.resumeWithException(error.toException())
+                    }
+                }
+
+                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                    // don't care. children are required to be immutable
+                }
+
+                override fun onChildRemoved(snapshot: DataSnapshot) {
+                    // don't care. children are required to be immutable
+                }
+
+                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+                    // don't care. children are required to be immutable
+                }
+            }
+
+            Log.d("ME", "monitoring $streamId")
+
+            // attach observer
+            query.addChildEventListener(childListener)
+
+            cont.invokeOnCancellation {
+                // remove observer
+                query.removeEventListener(childListener)
+
+                Log.d("ME", "removed listener for $streamId")
+            }
+        }
+    }
+
+    private fun convertDataSnapshot(childSnapshot: DataSnapshot, streamId: Long): DataPoint {
+        return DataPoint(
+            timestamp = (childSnapshot.child("timeMillis").value as Number).toLong(),
+            calibratedValue = (childSnapshot.child("calibratedValue").value as Number).toFloat(),
+            streamId = streamId
+        )
+    }
+
+    private fun onNewDataPoint(childSnapshot: DataSnapshot, streamId: Long) {
+        coroutineScope.launch {
+            val dataPoint = convertDataSnapshot(childSnapshot, streamId)
+            roomDb.dataPointDao().insert(dataPoint)
+
+            Log.d("ME", "Inserted data point ts: ${dataPoint.timestamp} streamId: $streamId")
+        }
     }
 
     companion object {

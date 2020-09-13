@@ -29,7 +29,7 @@ object StreamRepository {
         startTs: Long,
         endTs: Long,
         windowSizeMs: Long
-    ): Flow<List<AveragedDataPoint>> {
+    ): Flow<List<SummarizedDataPoint>> {
         return flow {
             // look up the stream
             val streamId = getStreamId(fbSessionId, fbStreamId)
