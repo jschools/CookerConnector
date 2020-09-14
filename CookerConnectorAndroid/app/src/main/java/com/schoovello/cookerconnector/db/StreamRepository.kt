@@ -3,6 +3,7 @@ package com.schoovello.cookerconnector.db
 import android.util.Log
 import androidx.room.Room
 import com.schoovello.cookerconnector.CookerConnectorApp
+import com.schoovello.cookerconnector.data.FirebaseStreamIdentifier
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -19,20 +20,19 @@ object StreamRepository {
         ).build()
     }
 
-    suspend fun getStreamId(fbSessionId: String, fbStreamId: String): Long? {
-        return database.streamDao().find(fbSessionId, fbStreamId)?.rowId
+    private suspend fun getStreamId(streamIdentifier: FirebaseStreamIdentifier): Long? {
+        return database.streamDao().find(streamIdentifier.sessionId, streamIdentifier.streamId)?.rowId
     }
 
     fun getAverages(
-        fbSessionId: String,
-        fbStreamId: String,
+        streamIdentifier: FirebaseStreamIdentifier,
         startTs: Long,
         endTs: Long,
         windowSizeMs: Long
     ): Flow<List<SummarizedDataPoint>> {
         return flow {
             // look up the stream
-            val streamId = getStreamId(fbSessionId, fbStreamId)
+            val streamId = getStreamId(streamIdentifier)
             if (streamId == null) {
                 emit(emptyList())
                 return@flow
@@ -43,11 +43,11 @@ object StreamRepository {
         }
     }
 
-    suspend fun deleteStreamData(fbSessionId: String, fbStreamId: String) {
-        val deleteCount = getStreamId(fbSessionId, fbStreamId)?.let {
+    suspend fun deleteStreamData(streamIdentifier: FirebaseStreamIdentifier) {
+        val deleteCount = getStreamId(streamIdentifier)?.let {
             database.dataPointDao().deleteAll(it)
         } ?: 0
 
-        Log.d("ME", "Deleted $deleteCount rows from $fbSessionId/$fbStreamId")
+        Log.d("ME", "Deleted $deleteCount rows from $streamIdentifier")
     }
 }

@@ -1,6 +1,13 @@
 package com.schoovello.cookerconnector.db
 
 import android.util.Log
+import androidx.annotation.Keep
+import androidx.annotation.MainThread
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.OnLifecycleEvent
 import androidx.room.withTransaction
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
@@ -8,40 +15,137 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseException
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.schoovello.cookerconnector.data.FirebaseDbInstance
+import com.schoovello.cookerconnector.data.FirebaseStreamIdentifier
 import com.schoovello.cookerconnector.util.fetchValueSnapshot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.coroutineContext
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.resumeWithException
 
-class DbStreamSynchronizer(
-    private val coroutineScope: CoroutineScope,
+object FirebaseSyncManager {
+
+    private val activeSynchronizers = HashMap<FirebaseStreamIdentifier, ManagedSynchronizer>()
+
+    @MainThread
+    fun synchronizeLifecycle(lifecycleOwner: LifecycleOwner, streamIdentifier: FirebaseStreamIdentifier) {
+        // register lifecycle observer
+        lifecycleOwner.lifecycle.addObserver(ActiveStreamObserver(streamIdentifier))
+    }
+
+    @MainThread
+    fun synchronizeWhenActive(streamIdentifier: FirebaseStreamIdentifier): LiveData<Unit> {
+        return object : LiveData<Unit>() {
+            override fun onActive() {
+                addSyncRequest(streamIdentifier)
+                value = Unit
+            }
+
+            override fun onInactive() {
+                removeSyncRequest(streamIdentifier)
+            }
+        }
+    }
+
+    @MainThread
+    fun addSyncRequest(streamIdentifier: FirebaseStreamIdentifier) {
+        val managed = activeSynchronizers[streamIdentifier] ?: run {
+            // create and start a new synchronizer
+            val synchronizer = DbStreamSynchronizer(FirebaseDbInstance.instance, StreamRepository.database, streamIdentifier)
+            synchronizer.start()
+
+            val managed = ManagedSynchronizer(synchronizer)
+            activeSynchronizers[streamIdentifier] = managed
+
+            managed
+        }
+
+        managed.refCount++
+    }
+
+    @MainThread
+    fun removeSyncRequest(streamIdentifier: FirebaseStreamIdentifier) {
+        val managed = activeSynchronizers[streamIdentifier] ?: return
+
+        managed.refCount--
+
+        if (managed.refCount == 0) {
+            // stop and remove the synchronizer
+            managed.synchronizer.stop()
+            activeSynchronizers.remove(streamIdentifier)
+        }
+    }
+
+    private class ActiveStreamObserver(
+        private val streamIdentifier: FirebaseStreamIdentifier
+    ) : LifecycleObserver {
+        @OnLifecycleEvent(Lifecycle.Event.ON_START)
+        @Keep
+        fun onStart() {
+            addSyncRequest(streamIdentifier)
+        }
+
+        @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+        @Keep
+        fun onStop() {
+            removeSyncRequest(streamIdentifier)
+        }
+    }
+
+    private class ManagedSynchronizer(
+        val synchronizer: DbStreamSynchronizer,
+    ) {
+        var refCount = 0
+    }
+}
+
+private class DbStreamSynchronizer(
     private val firebaseDb: FirebaseDatabase,
     private val roomDb: StreamDatabase,
-    private val fbSessionId: String,
-    private val fbStreamId: String
-) {
+    private val streamIdentifier: FirebaseStreamIdentifier
+) : CoroutineScope {
+
+    private val job: Job by lazy { Job() }
+
+    private var started = false
+
+    override val coroutineContext: CoroutineContext
+        get() = job + Dispatchers.Main.immediate
 
     fun start() {
-        coroutineScope.launch {
+        if (started) {
+            throw IllegalStateException("Synchronizer was already started")
+        }
+        started = true
+
+        launch {
             synchronizeAndMonitor()
         }
+    }
+
+    fun stop() {
+        job.cancel()
     }
 
     private suspend fun synchronizeAndMonitor() {
         try {
             val streamRef = firebaseDb.reference
                 .child("sessionData")
-                .child(fbSessionId)
-                .child(fbStreamId)
+                .child(streamIdentifier.sessionId)
+                .child(streamIdentifier.streamId)
 
             // synchronize data in bulk
             synchronize(streamRef)
 
             // begin monitoring for changes
             monitorForever(streamRef)
+        } catch (e: CancellationException) {
+            // normal cancellation: this is not an error
         } catch (t: Throwable) {
             t.printStackTrace()
         }
@@ -131,12 +235,12 @@ class DbStreamSynchronizer(
 
         return roomDb.withTransaction {
             // find existing row
-            val existingRow = streamDao.find(fbSessionId, fbStreamId)
+            val existingRow = streamDao.find(streamIdentifier.sessionId, streamIdentifier.streamId)
             if (existingRow == null) {
                 // create and insert it
                 val newRow = Stream(
-                    fbSessionId = fbSessionId,
-                    fbStreamId = fbStreamId
+                    fbSessionId = streamIdentifier.sessionId,
+                    fbStreamId = streamIdentifier.streamId
                 )
                 val id = streamDao.insert(newRow)
 
@@ -169,14 +273,12 @@ class DbStreamSynchronizer(
     private suspend fun monitorForever(
         streamRef: DatabaseReference
     ) {
-        Log.d("ME", "monitoring")
+        Log.d("ME", "monitor: $streamRef")
 
         // get the max timestamp in the Room db
         val roomStreamRow = findOrInsertStream()
         val streamId = roomStreamRow.rowId
         val maxRoomTimestamp = roomDb.dataPointDao().getLastTimestampForStream(streamId) ?: 0L
-
-        Log.d("ME", "maxRoomTs: $maxRoomTimestamp")
 
         // create query for all data points starting after startTimestampExclusive
         val query = streamRef.orderByChild("timeMillis")
@@ -209,16 +311,12 @@ class DbStreamSynchronizer(
                 }
             }
 
-            Log.d("ME", "monitoring $streamId")
-
             // attach observer
             query.addChildEventListener(childListener)
 
             cont.invokeOnCancellation {
                 // remove observer
                 query.removeEventListener(childListener)
-
-                Log.d("ME", "removed listener for $streamId")
             }
         }
     }
@@ -232,7 +330,7 @@ class DbStreamSynchronizer(
     }
 
     private fun onNewDataPoint(childSnapshot: DataSnapshot, streamId: Long) {
-        coroutineScope.launch {
+        launch {
             val dataPoint = convertDataSnapshot(childSnapshot, streamId)
             roomDb.dataPointDao().insert(dataPoint)
 

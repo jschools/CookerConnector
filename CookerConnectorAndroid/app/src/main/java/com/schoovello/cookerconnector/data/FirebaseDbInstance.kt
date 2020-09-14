@@ -6,7 +6,8 @@ object FirebaseDbInstance {
 
 	val instance: FirebaseDatabase by lazy {
 		FirebaseDatabase.getInstance().apply {
-			setPersistenceEnabled(false)
+			setPersistenceEnabled(true)
+			setPersistenceCacheSizeBytes(1024 * 1024 * 64) // 64MB
 		}
 	}
 }

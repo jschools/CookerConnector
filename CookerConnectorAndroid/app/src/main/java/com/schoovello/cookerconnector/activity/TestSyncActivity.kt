@@ -21,15 +21,15 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.schoovello.cookerconnector.R
 import com.schoovello.cookerconnector.activity.TestSyncActivity.Adapter.Holder
-import com.schoovello.cookerconnector.data.FirebaseDbInstance
-import com.schoovello.cookerconnector.db.DbStreamSynchronizer
+import com.schoovello.cookerconnector.data.FirebaseStreamIdentifier
+import com.schoovello.cookerconnector.db.FirebaseSyncManager
 import com.schoovello.cookerconnector.db.StreamRepository
 import com.schoovello.cookerconnector.db.SummarizedDataPoint
+import kotlinx.android.synthetic.main.activity_test_sync.clear_button
 import kotlinx.android.synthetic.main.activity_test_sync.decrease_size_button
 import kotlinx.android.synthetic.main.activity_test_sync.increase_size_button
 import kotlinx.android.synthetic.main.activity_test_sync.recycler_view
-import kotlinx.android.synthetic.main.activity_test_sync.reset_button
-import kotlinx.android.synthetic.main.activity_test_sync.start_button
+import kotlinx.android.synthetic.main.activity_test_sync.sync_button
 import kotlinx.android.synthetic.main.activity_test_sync.window_size
 import kotlinx.android.synthetic.main.list_item_data_point.view.text
 import kotlinx.coroutines.CoroutineScope
@@ -65,7 +65,7 @@ class TestSyncActivity : AppCompatActivity() {
         }
 
         val dataPointsLd: LiveData<List<SummarizedDataPoint>> = windowStepLd.switchMap { (windowMs, _) ->
-            StreamRepository.getAverages(SESSION_ID, STREAM_ID, 0, Long.MAX_VALUE, windowMs).asLiveData()
+            StreamRepository.getAverages(STREAM_IDENTIFIER, 0, Long.MAX_VALUE, windowMs).asLiveData()
         }
 
         fun changeWindowStep(difference: Int) {
@@ -79,19 +79,18 @@ class TestSyncActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_test_sync)
 
-        start_button.setOnClickListener {
-            DbStreamSynchronizer(
-                coroutineScope = lifecycleScope,
-                firebaseDb = FirebaseDbInstance.instance,
-                roomDb = StreamRepository.database,
-                fbSessionId = SESSION_ID,
-                fbStreamId = STREAM_ID
-            ).start()
+        FirebaseSyncManager.synchronizeLifecycle(this, STREAM_IDENTIFIER)
+
+        sync_button.setOnClickListener {
+            FirebaseSyncManager.apply {
+                removeSyncRequest(STREAM_IDENTIFIER)
+                addSyncRequest(STREAM_IDENTIFIER)
+            }
         }
 
-        reset_button.setOnClickListener {
+        clear_button.setOnClickListener {
             lifecycle.coroutineScope.launch {
-                StreamRepository.deleteStreamData(SESSION_ID, STREAM_ID)
+                StreamRepository.deleteStreamData(STREAM_IDENTIFIER)
             }
         }
 
@@ -246,6 +245,7 @@ class TestSyncActivity : AppCompatActivity() {
     companion object {
         private const val SESSION_ID = "-testMonitor1" // "-L8NtmMM2ndRyNlkyWC2"
         private const val STREAM_ID = "stream1" // "-L8NtmMNjf7WwlIHQWjg"
+        private val STREAM_IDENTIFIER = FirebaseStreamIdentifier(SESSION_ID, STREAM_ID)
 
         private const val DEFAULT_WINDOW_STEP_INDEX = 6
 
